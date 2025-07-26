@@ -45,13 +45,11 @@ jobs:
         working-directory: ${{ inputs.service_dir }}
         run: |
           docker build \
-            -t $REPO_URI:${{ inputs.commit_short }} \
             -t $REPO_URI:latest \
             .
 
       - name: Push Docker Images to ECR
         run: |
-          docker push $REPO_URI:${{ inputs.commit_short }}
           docker push $REPO_URI:latest
           echo "$REPO_URI:latest" > image_uri.txt
 
