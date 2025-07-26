@@ -1,0 +1,73 @@
+name: Service Context Setup
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+        default: "default-service"
+      service_dir:
+        required: true
+        type: string
+        default: "default-service-dir"
+      node_version:
+        required: true
+        type: string
+        default: "16.19.0"
+      env_var_name:
+        type: string
+        default: "${{ inputs.service_name }}"
+
+    outputs:
+      commit_short:
+        description: "Short commit hash"
+        value: ${{ jobs.set-context.outputs.commit_short }}
+      service_name:
+        description: "Service name"
+        value: ${{ jobs.set-context.outputs.service_name }}
+      service_dir:
+        description: "Service directory"
+        value: ${{ jobs.set-context.outputs.service_dir }}
+      node_version:
+        description: "Node version"
+        value: ${{ jobs.set-context.outputs.node_version }}
+      env_var_name:
+        description: "Service environment variable name"
+        value: ${{ jobs.set-context.outputs.env_var_name }}
+
+run-name: "Set Service Context for ${{ inputs.service_name }}"
+
+jobs:
+  set-context:
+    runs-on: ubuntu-latest
+    outputs:
+      commit_short: ${{ steps.extract_commit.outputs.COMMIT_SHORT }}
+      env_var_name: ${{ steps.set_env.outputs.ENV_VAR_NAME }}
+      service_name: ${{ steps.set_env.outputs.SERVICE_NAME }}
+      service_dir: ${{ steps.set_env.outputs.SERVICE_DIR }}
+      node_version: ${{ steps.set_env.outputs.NODE_VERSION }}
+
+    steps:
+      - name: Extract Short Commit Hash
+        id: extract_commit
+        run: |
+          COMMIT_SHORT=$(echo '${{ github.event.pull_request.head.sha || github.sha }}' | cut -c1-7)
+
+          echo "COMMIT_SHORT=$COMMIT_SHORT" >> $GITHUB_OUTPUT
+          echo "Generated Short Commit Hash: $COMMIT_SHORT"
+
+      - name: Set Service Context
+        id: set_env
+        run: |
+          SERVICE_NAME="${{ inputs.service_name }}"
+          SERVICE_DIR="${{ inputs.service_dir }}"
+          NODE_VERSION="${{ inputs.node_version }}"
+          ENV_VAR_NAME="${{ inputs.env_var_name }}"
+
+          echo "Generated Service Context: $SERVICE_NAME, $SERVICE_DIR, $NODE_VERSION, $ENV_VAR_NAME"
+
+          echo "SERVICE_NAME=$SERVICE_NAME" >> $GITHUB_OUTPUT
+          echo "SERVICE_DIR=$SERVICE_DIR" >> $GITHUB_OUTPUT
+          echo "NODE_VERSION=$NODE_VERSION" >> $GITHUB_OUTPUT
+          echo "ENV_VAR_NAME=$ENV_VAR_NAME" >> $GITHUB_OUTPUT

@@ -1,0 +1,66 @@
+name: Build and Push to ECR
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+      service_dir:
+        required: true
+        type: string
+      commit_short:
+        required: true
+        type: string
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  CONTAINER_NAME: dev-legacy-service
+  S3_BUCKET: s3imagedefinition
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set ECR Repository URI
+        id: ecr
+        run: |
+          echo "REPO_URI=${{ env.ECR_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/rentickle/${{ inputs.service_name }}" >> $GITHUB_ENV
+
+      - name: Build Docker Image
+        working-directory: ${{ inputs.service_dir }}
+        run: |
+          docker build \
+            -t $REPO_URI:${{ inputs.commit_short }} \
+            -t $REPO_URI:latest \
+            .
+
+      - name: Push Docker Images to ECR
+        run: |
+          docker push $REPO_URI:${{ inputs.commit_short }}
+          docker push $REPO_URI:latest
+          echo "$REPO_URI:latest" > image_uri.txt
+
+      - name: Generate imagedefinitions.json
+        run: |
+          IMAGE_URI=$(cat image_uri.txt)
+          echo '[{"name":"${{ env.CONTAINER_NAME }}","imageUri":"'"$IMAGE_URI"'"}]' > imagedefinitions.json
+
+      - name: Upload imagedefinitions.json to S3
+        run: |
+          aws s3 cp imagedefinitions.json s3://${{ env.S3_BUCKET }}/imagedefinitions.json
+

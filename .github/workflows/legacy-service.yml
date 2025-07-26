@@ -1,0 +1,39 @@
+name: Legacy Service Pipeline
+
+defaults:
+  run:
+    shell: bash
+    working-directory: legacy-service
+
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "legacy-service/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "legacy-service/**"
+
+jobs:
+  setup-context:
+    name: Setup Context for Legacy Service
+    uses: ./.github/workflows/service-context.yml
+    with:
+      service_name: "legacy-service"
+      service_dir: "legacy-service"
+      node_version: "20.18.0"
+
+
+  build-push-docker-image:
+    name: Build and Push Docker Image for Legacy Service
+    needs: [setup-context]
+    uses: ./.github/workflows/ecr-build-push.yml
+    with:
+      service_name: ${{ needs.setup-context.outputs.service_name }}
+      service_dir: ${{ needs.setup-context.outputs.service_dir }}
+      commit_short: ${{ needs.setup-context.outputs.commit_short }}
+    secrets: inherit
+
