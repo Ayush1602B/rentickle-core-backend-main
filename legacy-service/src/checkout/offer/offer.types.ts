@@ -1,0 +1,4 @@
+export enum COUPON_TYPE {
+  SPECIFIC_COUPON = 2,
+  AUTO_GENERATED_COUPON = 0,
+}

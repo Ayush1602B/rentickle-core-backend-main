@@ -1,0 +1,30 @@
+apps:
+  - name: 'legacy-service'
+    script: './dist/main.js'
+    instances: 1
+    exec_mode: fork
+    error_file: './logs/legacy-service-err.log'
+    out_file: './logs/legacy-service-out.log'
+    combine_logs: true
+    public: $PM2_PUBLIC_KEY
+    secret: $PM2_SECRET_KEY
+    env:
+      NODE_ENV: dev
+    env_prod:
+      NODE_ENV: prod
+
+
+  - name: 'legacy-service-cron'
+    script: './dist/cron.js'
+    instances: 1
+    exec_mode: fork   
+    autorestart: false 
+    error_file: './logs/legacy-service-cron-err.log'
+    out_file: './logs/legacy-service-cron-out.log'
+    combine_logs: true
+    public: $PM2_PUBLIC_KEY
+    secret: $PM2_SECRET_KEY
+    env:
+      NODE_ENV: dev
+    env_prod:
+      NODE_ENV: prod
